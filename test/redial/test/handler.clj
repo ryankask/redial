@@ -17,17 +17,21 @@
 
 (use-fixtures :each db-fixture)
 
-(defn assert-get-contains [url text]
-  (let [response (app (request :get url))]
+(defn assert-contains [url text
+                       & {:keys [method params] :or {method :get, params {}}}]
+  (let [response (app (request method url params))]
     (is (= (:status response) 200))
     (is (substring? text (:body response)))))
 
 (deftest test-redial-routes
   (testing "main route"
-    (assert-get-contains "/" "Welcome to Redial"))
+    (assert-contains "/" "Welcome to Redial"))
 
   (testing "add route"
-    (assert-get-contains "/add" "Add a new URL"))
+    (testing "get"
+      (assert-contains "/add" "Add a URL"))
+    (testing "post"
+      (assert-contains "/add" "would post" :method :post)))
 
   (testing "not-found route"
     (let [response (app (request :get "/bad"))]
