@@ -4,6 +4,14 @@
 
 (def ^:dynamic database-url (System/getenv "REDIAL_DATABASE_URL"))
 
+(defmacro with-wrapped-sql-exception [& body]
+  `(try
+     ~@body
+     (catch java.sql.SQLException e#
+       {:error-message (.getMessage e#),
+        :sql-state (.getSQLState e#),
+        :original-exception e#})))
+
 (defn create-tables []
   (sql/with-connection database-url
     (sql/create-table
@@ -22,11 +30,12 @@
 
 (defn add-url [url]
   (sql/with-connection database-url
-    (sql/transaction
-     (sql/insert-values
-      :urls
-      [:url :created]
-      [url (time-coerce/to-timestamp (time-core/now))]))))
+    (with-wrapped-sql-exception
+      (sql/transaction
+       (sql/insert-values
+        :urls
+        [:url :created]
+        [url (time-coerce/to-timestamp (time-core/now))])))))
 
 (defn get-url [id]
   (sql/with-connection database-url

@@ -55,6 +55,15 @@
         ["SELECT * FROM urls WHERE url = ?" url]
         (is (= (:url (first results)) url))))))
 
+(deftest test-add-duplicate-url
+  (let [url "http://example.com"
+        _ (add-url url)
+        error (add-url url)]
+    (is (re-find #"duplicate key value violates unique constraint"
+                 (:error-message error)))
+    (is (= (:sql-state error) "23505"))
+    (is (instance? java.sql.SQLException (:original-exception error)))))
+
 (deftest test-get-url-wth-update
   (let [url "http://example.com"
         id (:id (add-url url))
