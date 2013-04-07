@@ -2,7 +2,9 @@
   (:require [redial.db :as db]
             [ring.util.response :as response]
             [ring.adapter.jetty :as jetty]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io])
+  (:use [ring.middleware.resource :only [wrap-resource]]
+        [ring.middleware.file-info :only [wrap-file-info]]))
 
 (def cached-templates (atom {}))
 
@@ -47,7 +49,10 @@
    (= uri "/favicon.ico") (not-found)
    :else (redirect uri)))
 
-(def app handler)
+(def app
+  (-> handler
+      (wrap-resource "public")
+      wrap-file-info))
 
 (defn -main []
   (jetty/run-jetty app {:port 8080 :join? false}))
