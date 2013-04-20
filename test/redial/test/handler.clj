@@ -1,5 +1,6 @@
 (ns redial.test.handler
-  (:require [clojure.java.jdbc :as sql])
+  (:require [clojure.java.jdbc :as sql]
+            [cheshire.core :as json])
   (:use clojure.test
         [ring.mock.request :only [request]]
         [redial handler db]))
@@ -30,8 +31,35 @@
   (testing "add route"
     (testing "get"
       (assert-contains "/add" "Add a URL"))
-    (testing "post"
-      (assert-contains "/add" "would post" :method :post)))
+
+    (testing "post without URL"
+      (assert-contains "/add" "no URL in post body" :method :post))
+
+    (testing "post with valid url"
+      (let [params {"url" "http://example.org"}
+            response (app (request :post "/add" params))]
+        (is (= (:status response) 200))
+        (let [url ((json/parse-string (:body response)) "shortUrl")]
+          (is (= (:id (get-url "url" (params "url")))
+                 (Long/parseLong (second (re-find #"/(\w+)$" url)) 36))))))
+
+    (testing "post with valid url on non-standard port"
+      (let [dest-url "http://example.co.uk"
+            params {"url" dest-url}
+            response (app (assoc (request :post "/add" params)
+                            :server-port 8001))]
+        (is (= (:status response) 200))
+        (is (.startsWith ((json/parse-string (:body response)) "shortUrl")
+                         "http://localhost:8001"))))
+
+    (testing "post with duplicate url returns error message"
+      (let [params {"url" "http://example.us"}
+            create-mock-request #(request :post "/add" params)
+            response (and (app (create-mock-request))
+                          (app (create-mock-request)))]
+        (is (= (:status response) 200))
+        (is (.startsWith ((json/parse-string (:body response)) "error")
+                         "ERROR: duplicate key")))))
 
   (testing "not-found route"
     (let [response (app (request :get "/bad"))]
@@ -46,6 +74,8 @@
       (is (= (:status response) 302))
       (is (= (get (:headers response) "Location") url))
       (is (= (:visited (get-url (:id row))) 1)))))
+
+;; DB tests
 
 (deftest test-add-url
   (let [url "http://example.com"]

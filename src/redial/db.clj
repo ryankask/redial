@@ -37,12 +37,14 @@
         [:url :created]
         [url (time-coerce/to-timestamp (time-core/now))])))))
 
-(defn get-url [id]
-  (sql/with-connection database-url
-    (sql/transaction
-     (sql/with-query-results results
-       ["SELECT * FROM urls WHERE id = ?" id]
-       (first results)))))
+(defn get-url
+  ([value] (get-url "id" value))
+  ([column value]
+     (sql/with-connection database-url
+       (sql/transaction
+        (sql/with-query-results results
+          [(str "SELECT * FROM urls WHERE " column " = ?") value]
+          (first results))))))
 
 (defn get-url-with-update [id]
   (sql/with-connection database-url

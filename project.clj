@@ -4,6 +4,7 @@
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [ring/ring-core "1.1.8"]
                  [ring/ring-jetty-adapter  "1.1.8"]
+                 [ring/ring-json "0.2.0"]
                  [org.clojure/java.jdbc "0.2.3"]
                  [postgresql/postgresql "8.4-702.jdbc4"]
                  [clj-time "0.4.5"]]

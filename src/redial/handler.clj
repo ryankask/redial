@@ -4,7 +4,10 @@
             [ring.adapter.jetty :as jetty]
             [clojure.java.io :as io])
   (:use [ring.middleware.resource :only [wrap-resource]]
-        [ring.middleware.file-info :only [wrap-file-info]]))
+        [ring.middleware.file-info :only [wrap-file-info]]
+        [ring.middleware.params :only [wrap-params]]
+        [ring.middleware.json :only [wrap-json-response]])
+  (:import java.net.URL))
 
 (def cached-templates (atom {}))
 
@@ -31,9 +34,26 @@
   (-> (response/response body)
       (response/content-type "text/html")))
 
+(defn join-url [request code]
+  (let [{:keys [scheme server-name server-port]} request
+        host-part (if (or (= server-port 80) (= server-port 443))
+                    (URL. (name scheme) server-name "")
+                    (URL. (name scheme) server-name server-port ""))]
+    (.toString (URL. host-part code))))
+
+(defn handle-add [request]
+  (let [form-params (:form-params request)]
+    (if-let [url (form-params "url")]
+      (let [row (db/add-url url)]
+        (if-let [error-message (:error-message row)]
+          (response/response {"error" error-message})
+          (response/response
+           {"shortUrl" (join-url request (Long/toString (:id row) 36))})))
+      (response/response {"error" "no URL in post body"}))))
+
 (defn add-url-form [request]
   (if (= (:request-method request) :post)
-    (render (page "would post"))
+    (handle-add request)
     (render (get-template (template-path "add.html")))))
 
 (defn redirect [uri]
@@ -52,7 +72,9 @@
 (def app
   (-> handler
       (wrap-resource "public")
-      wrap-file-info))
+      wrap-file-info
+      wrap-params
+      wrap-json-response))
 
 (defn -main []
   (jetty/run-jetty app {:port 8080 :join? false}))
