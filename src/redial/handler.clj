@@ -59,9 +59,12 @@
     (render (get-template (template-path "add.html")))))
 
 (defn redirect [uri]
-  (let [id (Long/parseLong (apply str (rest uri)) 36)]
-    (if-let [final-url (db/get-url-with-update id)]
-      (response/redirect final-url)
+  (try
+    (let [id (Long/parseLong (apply str (rest uri)) 36)]
+      (if-let [final-url (db/get-url-with-update id)]
+        (response/redirect final-url)
+        (not-found)))
+    (catch NumberFormatException e
       (not-found))))
 
 (defn handler [{:keys [uri] :as request}]

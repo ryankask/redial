@@ -65,6 +65,10 @@
     (let [response (app (request :get "/bad"))]
       (is (= (:status response) 404))))
 
+  (testing "route with string that cannot be converted to number"
+    (let [response (app (request :get "/js/app.js"))]
+      (is (= (:status response) 404))))
+
   (testing "found route"
     (let [row (add-url "http://example.org/")
           url (:url row)
