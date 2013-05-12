@@ -9,15 +9,17 @@
         [ring.middleware.json :only [wrap-json-response]])
   (:import java.net.URL))
 
+(def production? (System/getenv "LEIN_NO_DEV"))
 (def cached-templates (atom {}))
 
 (defn template-path [filename]
   (.getPath (io/file "templates" filename)))
 
 (defn get-template [path]
-  (or (@cached-templates path)
+  (or (and production? (@cached-templates path))
       (let [template (slurp (io/resource path))]
-        (swap! cached-templates assoc path template)
+        (if production?
+          (swap! cached-templates assoc path template))
         template)))
 
 (defn page [content]
