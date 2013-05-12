@@ -8,10 +8,10 @@
 (defn substring? [^String needle ^String haystack]
     (not (neg? (.indexOf haystack needle))))
 
-(def test-database-url "postgres://localhost:5432/redial-test")
+(def test-db "postgres://localhost:5432/redial-test")
 
 (defn db-fixture [f]
-  (binding [database-url test-database-url]
+  (binding [db test-db]
     (create-tables)
     (f)
     (drop-tables)))
@@ -80,10 +80,9 @@
 (deftest test-add-url
   (let [url "http://example.com"]
     (add-url url)
-    (sql/with-connection test-database-url
-      (sql/with-query-results results
-        ["SELECT * FROM urls WHERE url = ?" url]
-        (is (= (:url (first results)) url))))))
+    (is (= url (:url (first (sql/query
+                             test-db
+                             ["SELECT * FROM urls WHERE url = ?" url])))))))
 
 (deftest test-add-duplicate-url
   (let [url "http://example.com"

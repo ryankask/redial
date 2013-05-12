@@ -2,7 +2,7 @@
   (:require [clojure.java.jdbc :as sql]
             [clj-time [core :as time-core] [coerce :as time-coerce]]))
 
-(def ^:dynamic database-url (System/getenv "REDIAL_DATABASE_URL"))
+(def ^:dynamic db (System/getenv "REDIAL_DATABASE_URL"))
 
 (defmacro with-wrapped-sql-exception [& body]
   `(try
@@ -13,7 +13,7 @@
         :original-exception e#})))
 
 (defn create-tables []
-  (sql/with-connection database-url
+  (sql/with-connection db
     (sql/create-table
      :urls
      [:id :serial "NOT NULL" "PRIMARY KEY"]
@@ -22,33 +22,30 @@
      [:created "timestamp with time zone" "NOT NULL"])))
 
 (defn drop-tables []
-  (sql/with-connection database-url
-    (sql/transaction
+  (sql/with-connection db
+    (sql/db-transaction [t-db db]
      (try
        (sql/drop-table :urls)
        (catch Exception _)))))
 
 (defn add-url [url]
-  (sql/with-connection database-url
-    (with-wrapped-sql-exception
-      (sql/transaction
-       (sql/insert-values
-        :urls
-        [:url :created]
-        [url (time-coerce/to-timestamp (time-core/now))])))))
+  (with-wrapped-sql-exception
+    (sql/db-transaction [t-db db]
+     (first
+      (sql/insert!
+       t-db :urls
+       {:url url :created (time-coerce/to-timestamp (time-core/now))})))))
 
 (defn get-url
   ([value] (get-url "id" value))
   ([column value]
-     (sql/with-connection database-url
-       (sql/transaction
-        (sql/with-query-results results
-          [(str "SELECT * FROM urls WHERE " column " = ?") value]
-          (first results))))))
+     (first
+      (sql/query
+       db [(str "SELECT * FROM urls WHERE " column " = ?") value]))))
 
 (defn get-url-with-update [id]
-  (sql/with-connection database-url
-    (sql/transaction
-     (sql/with-query-results results
-       ["UPDATE urls SET visited = visited + 1 WHERE id = ? RETURNING *" id]
-       (:url (first results))))))
+  (sql/db-transaction [t-db db]
+    (:url (first
+           (sql/query
+            t-db
+            ["UPDATE urls SET visited = visited + 1 WHERE id = ? RETURNING *" id])))))
