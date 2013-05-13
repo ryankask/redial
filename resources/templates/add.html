@@ -7,9 +7,12 @@
   </head>
   <body>
     <h1>Add a URL</h1>
-    <form name=add>
-      <input type=url autofocus>
+    <form name=add method=post>
+      <div class=error></div>
+      <input placeholder="URL to shorten" type=url autofocus required>
+      <input type=submit value=Add>
     </form>
+    <div class=result>Shortened URL: <a id="short-link"></a></div>
     <script src="/js/main.js"></script>
   </body>
 </html>

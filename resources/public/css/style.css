@@ -1,3 +1,13 @@
 input[type=url] {
   width: 200px;
 }
+
+.error {
+  color: red;
+  margin-bottom: 1em;
+}
+
+.result {
+  display: none;
+  margin-top: 1em;
+}

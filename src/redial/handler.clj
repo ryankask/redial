@@ -51,7 +51,7 @@
           (response/response {"error" error-message})
           (response/response
            {"shortUrl" (join-url request (Long/toString (:id row) 36))})))
-      (response/response {"error" "no URL in post body"}))))
+      (response/response {"error" "No URL in post body"}))))
 
 (defn add-url-form [request]
   (if (= (:request-method request) :post)
