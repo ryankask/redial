@@ -2,10 +2,10 @@
   'use strict';
 
   var form = document.forms[0],
-  error = document.querySelector('.error'),
-  result = document.querySelector('.result'),
-  shortLink = document.querySelector('#short-link'),
-  req;
+      error = document.querySelector('.error'),
+      result = document.querySelector('.result'),
+      shortLink = document.querySelector('#short-link'),
+      req;
 
   form.addEventListener('submit',  handleSubmit, false);
 
